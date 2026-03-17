@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>the bridge</title>
+  <title>The Bridge</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
   <style>
     html, body {
@@ -15,7 +15,11 @@
       background: #000;
     }
 
-    #stage {
+    body {
+      font-family: sans-serif;
+    }
+
+    #app {
       position: fixed;
       inset: 0;
       width: 100vw;
@@ -24,20 +28,114 @@
       background: #000;
     }
 
-    #svgWrap,
-    #coverWrap {
+    .stage-layer {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
     }
 
-    #svgWrap svg {
+    .svg-wrap svg {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       display: block;
+    }
+
+    /* 메인 페이지는 처음엔 안 보임 */
+    #main-stage {
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0;
+      will-change: opacity;
+    }
+
+    /* 마지막에 화면을 정리해주는 흰 배경 */
+    #white-bg {
+      z-index: 2;
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: #fff;
+      opacity: 0;
+      will-change: opacity;
+    }
+
+    /* 넓게 번지는 빛 */
+    #white-bloom {
+      z-index: 3;
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 1;
+      will-change: opacity;
+    }
+
+    #white-bloom-inner {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 48px;
+      height: 100vh;
+      transform: translateX(-50%);
+      background: linear-gradient(
+        to right,
+        rgba(255,255,255,0.00) 0%,
+        rgba(255,255,255,0.05) 14%,
+        rgba(255,255,255,0.12) 26%,
+        rgba(255,255,255,0.22) 38%,
+        rgba(255,255,255,0.42) 50%,
+        rgba(255,255,255,0.22) 62%,
+        rgba(255,255,255,0.12) 74%,
+        rgba(255,255,255,0.05) 86%,
+        rgba(255,255,255,0.00) 100%
+      );
+      filter: blur(42px);
+      opacity: 0.18;
+      will-change: width, filter, opacity;
+    }
+
+    /* 중앙 코어 라인 */
+    #white-line {
+      z-index: 4;
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 1;
+      will-change: opacity;
+    }
+
+    #white-line-inner {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 10px;
+      height: 100vh;
+      transform: translateX(-50%);
+      background: linear-gradient(
+        to right,
+        rgba(255,255,255,0.00) 0%,
+        rgba(255,255,255,0.08) 14%,
+        rgba(255,255,255,0.22) 28%,
+        rgba(255,255,255,0.55) 40%,
+        rgba(255,255,255,0.98) 50%,
+        rgba(255,255,255,0.55) 60%,
+        rgba(255,255,255,0.22) 72%,
+        rgba(255,255,255,0.08) 86%,
+        rgba(255,255,255,0.00) 100%
+      );
+      filter: blur(14px);
+      opacity: 0.38;
+      will-change: width, filter, opacity;
+    }
+
+    /* 랜딩 */
+    #landing-overlay {
+      z-index: 5;
+      pointer-events: none;
+      opacity: 1;
+      will-change: opacity;
     }
 
     .cover {
@@ -49,15 +147,60 @@
       -webkit-user-drag: none;
       object-fit: fill;
     }
+
+    #hint {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      z-index: 10;
+      color: rgba(255,255,255,0.72);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
   </style>
 </head>
 <body>
-  <div id="stage">
-    <div id="svgWrap"></div>
-    <div id="coverWrap"></div>
+  <div id="app">
+    <!-- MAIN -->
+    <div id="main-stage" class="stage-layer">
+      <div id="main-svg-wrap" class="svg-wrap stage-layer"></div>
+      <div id="cover-wrap" class="stage-layer"></div>
+    </div>
+
+    <!-- WHITE FULL BACKGROUND -->
+    <div id="white-bg" class="stage-layer"></div>
+
+    <!-- WHITE BLOOM -->
+    <div id="white-bloom" class="stage-layer">
+      <div id="white-bloom-inner"></div>
+    </div>
+
+    <!-- WHITE CORE LINE -->
+    <div id="white-line" class="stage-layer">
+      <div id="white-line-inner"></div>
+    </div>
+
+    <!-- LANDING -->
+    <div id="landing-overlay" class="svg-wrap stage-layer"></div>
   </div>
 
+  <div id="hint">SCROLL</div>
+
   <script>
+    const LANDING_SVG_SRC = "web01.svg";
+    const MAIN_SVG_SRC = "web02.svg";
+
+    const COVER1_SRC = "cover1.png";
+    const COVER2_SRC = "cover2.png";
+    // const COVER1_SRC = "cover1.jpeg";
+    // const COVER2_SRC = "cover2.jpeg";
+
+    const MAIN_VIEW_W = 1920;
+    const MAIN_VIEW_H = 1086.2646;
+
     let svgRoot;
     let mode = 1;
 
@@ -65,15 +208,12 @@
     let cover1Placeholder, cover2Placeholder;
     let bridgeText, unquotedText;
 
-    const VIEW_W = 1920;
-    const VIEW_H = 1086.2646;
+    let coverWrap;
+    let cover1Dom, cover2Dom;
 
     let fitScale = 1;
     let fitX = 0;
     let fitY = 0;
-
-    let coverWrap;
-    let cover1Dom, cover2Dom;
 
     let coverRect = {
       x: 664.3654,
@@ -86,52 +226,94 @@
     let mouseBaseY = 0;
     let mouseCenterLocalX = 0;
 
+    let introProgress = 0;
+    let introTargetProgress = 0;
+    let revealUnlocked = false;
+    let introFinished = false;
+
+    const mainStage = document.getElementById("main-stage");
+    const mainSvgWrap = document.getElementById("main-svg-wrap");
+    const coverWrapEl = document.getElementById("cover-wrap");
+    const landingOverlay = document.getElementById("landing-overlay");
+    const whiteBg = document.getElementById("white-bg");
+    const whiteBloom = document.getElementById("white-bloom");
+    const whiteBloomInner = document.getElementById("white-bloom-inner");
+    const whiteLine = document.getElementById("white-line");
+    const whiteLineInner = document.getElementById("white-line-inner");
+    const hint = document.getElementById("hint");
+
     function setup() {
       noCanvas();
-      coverWrap = document.getElementById("coverWrap");
-      loadSVG();
+
+      coverWrap = coverWrapEl;
+
+      loadLandingSVG();
+      loadMainSVG();
+
+      applyUnifiedFit();
+      updateIntroAnimation();
+
+      window.addEventListener("resize", onResize, { passive: true });
+      window.addEventListener("wheel", onWheel, { passive: false });
+      window.addEventListener("keydown", onKeyDown);
     }
 
     function draw() {
-      if (!svgRoot || !mouseLayer) return;
-      if (fitScale === 0) return;
+      if (!introFinished) {
+        introProgress = lerp(introProgress, introTargetProgress, 0.055);
 
-      const targetSvgX = (mouseX - fitX) / fitScale;
-      const tx = targetSvgX - mouseCenterLocalX;
-      const ty = mouseBaseY;
-
-      mouseLayer.setAttribute("transform", `translate(${tx} ${ty})`);
-      mouseLayer.style.mixBlendMode = "screen";
-    }
-
-    async function loadSVG() {
-      try {
-        const res = await fetch("web02.svg");
-        const svgText = await res.text();
-
-        document.getElementById("svgWrap").innerHTML = svgText;
-        svgRoot = document.querySelector("#svgWrap svg");
-
-        if (!svgRoot) {
-          console.error("SVG not found");
-          return;
+        if (Math.abs(introProgress - introTargetProgress) < 0.0005) {
+          introProgress = introTargetProgress;
         }
 
-        // 화면 꽉 차게
-        svgRoot.setAttribute("preserveAspectRatio", "xMidYMid slice");
+        updateIntroAnimation();
+      }
 
-        bindSVGElements();
-        detectCoverRect();
-        detectMouseGeometry();
-        buildCoverImages();
-        applyFit();
-        applyMode(1);
-      } catch (err) {
-        console.error("SVG load failed:", err);
+      updateMouseFollow();
+    }
+
+    async function loadLandingSVG() {
+      try {
+        const res = await fetch(LANDING_SVG_SRC);
+        const text = await res.text();
+        landingOverlay.innerHTML = text;
+
+        const landingSvg = landingOverlay.querySelector("svg");
+        if (landingSvg) {
+          landingSvg.setAttribute("preserveAspectRatio", "xMidYMid slice");
+        }
+      } catch (e) {
+        console.error("Landing SVG load failed:", e);
       }
     }
 
-    function bindSVGElements() {
+    async function loadMainSVG() {
+      try {
+        const res = await fetch(MAIN_SVG_SRC);
+        const svgText = await res.text();
+
+        mainSvgWrap.innerHTML = svgText;
+        svgRoot = mainSvgWrap.querySelector("svg");
+
+        if (!svgRoot) {
+          console.error("Main SVG not found");
+          return;
+        }
+
+        svgRoot.setAttribute("preserveAspectRatio", "xMidYMid slice");
+
+        bindMainElements();
+        detectCoverRect();
+        detectMouseGeometry();
+        buildCoverImages();
+        applyUnifiedFit();
+        applyMode(1);
+      } catch (err) {
+        console.error("Main SVG load failed:", err);
+      }
+    }
+
+    function bindMainElements() {
       bgw = svgRoot.getElementById("bgw");
       bgb = svgRoot.getElementById("bgb");
       text1 = svgRoot.getElementById("text1");
@@ -201,20 +383,22 @@
       coverWrap.innerHTML = "";
 
       cover1Dom = document.createElement("img");
-      cover1Dom.src = "cover1.png";
+      cover1Dom.src = COVER1_SRC;
       cover1Dom.className = "cover";
       cover1Dom.id = "cover1-dom";
       cover1Dom.alt = "cover1";
       cover1Dom.addEventListener("click", () => {
+        if (!revealUnlocked) return;
         if (mode === 1) applyMode(2);
       });
 
       cover2Dom = document.createElement("img");
-      cover2Dom.src = "cover2.png";
+      cover2Dom.src = COVER2_SRC;
       cover2Dom.className = "cover";
       cover2Dom.id = "cover2-dom";
       cover2Dom.alt = "cover2";
       cover2Dom.addEventListener("click", () => {
+        if (!revealUnlocked) return;
         if (mode === 2) applyMode(1);
       });
 
@@ -222,17 +406,21 @@
       coverWrap.appendChild(cover2Dom);
     }
 
-    function applyFit() {
+    function applyUnifiedFit() {
       const sw = window.innerWidth;
       const sh = window.innerHeight;
 
-      // contain 말고 cover
-      fitScale = Math.max(sw / VIEW_W, sh / VIEW_H);
-      fitX = (sw - VIEW_W * fitScale) * 0.5;
-      fitY = (sh - VIEW_H * fitScale) * 0.5;
+      fitScale = Math.max(sw / MAIN_VIEW_W, sh / MAIN_VIEW_H);
+      fitX = (sw - MAIN_VIEW_W * fitScale) * 0.5;
+      fitY = (sh - MAIN_VIEW_H * fitScale) * 0.5;
 
       positionCover(cover1Dom);
       positionCover(cover2Dom);
+
+      whiteLineInner.style.top = `0px`;
+      whiteLineInner.style.height = `${window.innerHeight}px`;
+      whiteBloomInner.style.top = `0px`;
+      whiteBloomInner.style.height = `${window.innerHeight}px`;
     }
 
     function positionCover(el) {
@@ -242,6 +430,114 @@
       el.style.top = `${fitY + coverRect.y * fitScale}px`;
       el.style.width = `${coverRect.w * fitScale}px`;
       el.style.height = `${coverRect.h * fitScale}px`;
+    }
+
+    function onWheel(e) {
+      if (introFinished) return;
+
+      e.preventDefault();
+
+      const raw = e.deltaY;
+      const limited = Math.sign(raw) * Math.min(Math.abs(raw), 10);
+      const step = limited * 0.00095;
+
+      introTargetProgress = clamp(introTargetProgress + step, 0, 1);
+    }
+
+    function onKeyDown(e) {
+      if (introFinished) return;
+
+      if (e.key === "ArrowDown" || e.key === "PageDown" || e.key === " ") {
+        e.preventDefault();
+        introTargetProgress = clamp(introTargetProgress + 0.03, 0, 1);
+      }
+
+      if (e.key === "ArrowUp" || e.key === "PageUp") {
+        e.preventDefault();
+        introTargetProgress = clamp(introTargetProgress - 0.03, 0, 1);
+      }
+    }
+
+    function updateIntroAnimation() {
+      const t = easeInOutCubic(introProgress);
+
+      // 1) 실제 bar가 퍼지는 단계
+      const whitePhase = clamp(t / 0.74, 0, 1);
+
+      // 2) 충분히 퍼진 후 bg가 뒤늦게 따라옴
+      const bgPhase = clamp((t - 0.48) / 0.26, 0, 1);
+
+      // 3) 메인 등장
+      const mainPhase = clamp((t - 0.66) / 0.34, 0, 1);
+
+      const glow = easeOutCubic(whitePhase);
+
+      // 중앙 코어 라인
+      const coreWidth = lerp(4, window.innerWidth * 0.18, glow);
+      const coreBlur = lerp(14, 42, glow);
+      const coreOpacity = lerp(0.38, 1.0, glow);
+
+      whiteLineInner.style.width = `${coreWidth}px`;
+      whiteLineInner.style.filter = `blur(${coreBlur}px)`;
+      whiteLineInner.style.opacity = `${coreOpacity}`;
+
+      // 바깥으로 퍼지는 큰 bloom
+      const bloomWidth = lerp(48, window.innerWidth * 1.12, glow);
+      const bloomBlur = lerp(42, 140, glow);
+      const bloomOpacity = lerp(0.18, 0.92, glow);
+
+      whiteBloomInner.style.width = `${bloomWidth}px`;
+      whiteBloomInner.style.filter = `blur(${bloomBlur}px)`;
+      whiteBloomInner.style.opacity = `${bloomOpacity}`;
+
+      // 배경은 늦게 따라오게
+      whiteBg.style.opacity = `${easeOutCubic(bgPhase)}`;
+
+      // 랜딩은 bar가 충분히 퍼질수록 서서히 사라짐
+      const landingOpacity = 1 - clamp((t - 0.36) / 0.30, 0, 1);
+      landingOverlay.style.opacity = `${landingOpacity}`;
+
+      // 코어 라인, bloom은 후반에 사라짐
+      const lineFade = 1 - clamp((t - 0.82) / 0.14, 0, 1);
+      whiteLine.style.opacity = `${lineFade}`;
+      whiteBloom.style.opacity = `${lineFade}`;
+
+      // 메인은 마지막에 서서히 등장
+      mainStage.style.opacity = `${easeOutCubic(mainPhase)}`;
+
+      hint.style.opacity = t > 0.88 ? "0" : "1";
+
+      const shouldUnlock = t > 0.985;
+      if (shouldUnlock !== revealUnlocked) {
+        revealUnlocked = shouldUnlock;
+        mainStage.style.pointerEvents = revealUnlocked ? "auto" : "none";
+      }
+
+      if (t >= 0.999) {
+        introFinished = true;
+        revealUnlocked = true;
+        mainStage.style.pointerEvents = "auto";
+        mainStage.style.opacity = "1";
+
+        landingOverlay.style.display = "none";
+        whiteLine.style.display = "none";
+        whiteBloom.style.display = "none";
+        whiteBg.style.display = "none";
+        hint.style.display = "none";
+      }
+    }
+
+    function updateMouseFollow() {
+      if (!svgRoot || !mouseLayer) return;
+      if (!revealUnlocked) return;
+      if (fitScale === 0) return;
+
+      const targetSvgX = (mouseX - fitX) / fitScale;
+      const tx = targetSvgX - mouseCenterLocalX;
+      const ty = mouseBaseY;
+
+      mouseLayer.setAttribute("transform", `translate(${tx} ${ty})`);
+      mouseLayer.style.mixBlendMode = "screen";
     }
 
     function applyMode(nextMode) {
@@ -304,9 +600,7 @@
 
     function reorderSVG(list) {
       list.forEach(el => {
-        if (el && el.parentNode) {
-          el.parentNode.appendChild(el);
-        }
+        if (el && el.parentNode) el.parentNode.appendChild(el);
       });
     }
 
@@ -330,8 +624,27 @@
       });
     }
 
-    function windowResized() {
-      applyFit();
+    function onResize() {
+      applyUnifiedFit();
+      if (!introFinished) updateIntroAnimation();
+    }
+
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function easeInOutCubic(t) {
+      return t < 0.5
+        ? 4 * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
     }
   </script>
 </body>

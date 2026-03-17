@@ -1,7 +1,21 @@
-html, body {
-  margin: 0;
-  padding: 0;
-}
-canvas {
-  display: block;
+#white-gap-inner {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 6px;
+  height: 100vh;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    to right,
+    rgba(255,255,255,0.00) 0%,
+    rgba(255,255,255,0.10) 18%,
+    rgba(255,255,255,0.32) 34%,
+    rgba(255,255,255,0.96) 50%,
+    rgba(255,255,255,0.32) 66%,
+    rgba(255,255,255,0.10) 82%,
+    rgba(255,255,255,0.00) 100%
+  );
+  filter: blur(14px);
+  will-change: width, opacity, filter;
+  opacity: 1;
 }

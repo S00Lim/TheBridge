@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 1920 1080">
+  <!-- Generator: Adobe Illustrator 30.2.1, SVG Export Plug-In . SVG Version: 2.1.1 Build 1)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: url(#linear-gradient2);
+      }
+
+      .st1 {
+        fill: url(#linear-gradient1);
+      }
+
+      .st2 {
+        fill: url(#linear-gradient3);
+      }
+
+      .st3 {
+        fill: url(#linear-gradient);
+      }
+
+      .st4 {
+        fill: #fff;
+      }
+    </style>
+    <linearGradient id="linear-gradient" x1="0" y1="540" x2="1920" y2="540" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#010101"/>
+      <stop offset=".2" stop-color="#6a6a6a"/>
+      <stop offset=".3" stop-color="#bababa"/>
+      <stop offset=".4" stop-color="#ebebeb"/>
+      <stop offset=".5" stop-color="#fff"/>
+      <stop offset=".6" stop-color="#ececec"/>
+      <stop offset=".7" stop-color="#bbb"/>
+      <stop offset=".8" stop-color="#6d6d6d"/>
+      <stop offset="1" stop-color="#020202"/>
+      <stop offset="1" stop-color="#000"/>
+    </linearGradient>
+    <linearGradient id="linear-gradient1" x1="140" y1="540" x2="1780" y2="540" gradientTransform="translate(420 1500) rotate(-90)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff4995"/>
+      <stop offset=".5" stop-color="#fff"/>
+      <stop offset="1" stop-color="#ff4996"/>
+    </linearGradient>
+    <linearGradient id="linear-gradient2" x1="210" y1="540" x2="1710" y2="540" gradientTransform="translate(420 1500) rotate(-90)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9bc700"/>
+      <stop offset=".5" stop-color="#fff"/>
+      <stop offset="1" stop-color="#9ac600"/>
+    </linearGradient>
+    <linearGradient id="linear-gradient3" x1="280" y1="540" x2="1640" y2="540" gradientTransform="translate(420 1500) rotate(-90)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00a3e0"/>
+      <stop offset=".5" stop-color="#fff"/>
+      <stop offset="1" stop-color="#00a4e1"/>
+    </linearGradient>
+  </defs>
+  <rect class="st3" width="1920" height="1080"/>
+  <rect class="st4" x="490" y="-350" width="940" height="1780" transform="translate(1500 -420) rotate(90)"/>
+  <rect class="st1" x="560" y="-280" width="800" height="1640" transform="translate(1500 -420) rotate(90)"/>
+  <rect class="st0" x="630" y="-210" width="660" height="1500" transform="translate(1500 -420) rotate(90)"/>
+  <rect class="st2" x="700" y="-140" width="520" height="1360" transform="translate(1500 -420) rotate(90)"/>
+</svg>
