@@ -5,6 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>The Bridge</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+  
+  <style>
+    @font-face {
+      font-family: 'Dialogue';
+      src: url('./fonts/Dialogue-A-Medium-TRIAL.ttf') format('truetype');
+    }
+
+    @font-face {
+      font-family: 'Syncro';
+      src: url('./fonts/SyncroTrial-Book.otf') format('opentype');
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Dialogue', serif;
+    }
+
+    svg text {
+      font-family: 'Dialogue', serif;
+    }
+  </style>
+  
   <style>
     html, body {
       margin: 0;
@@ -117,17 +140,19 @@
       object-fit: fill;
     }
 
+    /* 처음엔 검정, 스크롤 시작하면 흰색으로 바뀌게 */
     #hint {
       position: fixed;
       left: 50%;
       bottom: 18px;
       transform: translateX(-50%);
       z-index: 20;
-      color: rgba(255,255,255,0.72);
+      color: #000000;
+      opacity: 1;
       font-size: 12px;
       letter-spacing: 0.08em;
       pointer-events: none;
-      transition: opacity 0.25s ease;
+      transition: color 0.35s ease, opacity 0.25s ease;
     }
   </style>
 </head>
@@ -193,6 +218,7 @@
     let introTargetProgress = 0;
     let revealUnlocked = false;
     let introFinished = false;
+    let hasScrolled = false;
 
     const mainStage = document.getElementById("main-stage");
     const mainSvgWrap = document.getElementById("main-svg-wrap");
@@ -264,6 +290,10 @@
         }
 
         svgRoot.setAttribute("preserveAspectRatio", "xMidYMid slice");
+        
+        svgRoot.querySelectorAll("text").forEach(t => {
+          t.style.fontFamily = "'Dialogue', serif";
+        });
 
         bindMainElements();
         detectCoverRect();
@@ -415,9 +445,17 @@
       };
     }
 
+    function activateHint() {
+      if (hasScrolled) return;
+      hasScrolled = true;
+      hint.style.color = "rgba(255,255,255,0.72)";
+      hint.style.opacity = "1";
+    }
+
     function onWheel(e) {
       if (introFinished) return;
 
+      activateHint();
       e.preventDefault();
 
       const raw = e.deltaY;
@@ -431,75 +469,78 @@
       if (introFinished) return;
 
       if (e.key === "ArrowDown" || e.key === "PageDown" || e.key === " ") {
+        activateHint();
         e.preventDefault();
         introTargetProgress = clamp(introTargetProgress + 0.035, 0, 1);
       }
 
       if (e.key === "ArrowUp" || e.key === "PageUp") {
+        activateHint();
         e.preventDefault();
         introTargetProgress = clamp(introTargetProgress - 0.035, 0, 1);
       }
     }
 
-function updateIntroAnimation() {
-  const t = easeInOutCubic(introProgress);
+    function updateIntroAnimation() {
+      const t = easeInOutCubic(introProgress);
 
-  // 카드 이동은 대부분 구간에서 진행
-  const cardPhase = clamp(t / 0.88, 0, 1);
+      // 카드 이동은 대부분 구간에서 진행
+      const cardPhase = clamp(t / 0.88, 0, 1);
 
-  // 메인은 아주 마지막에만 등장
-  const mainPhase = clamp((t - 0.90) / 0.10, 0, 1);
+      // 메인은 아주 마지막에만 등장
+      const mainPhase = clamp((t - 0.90) / 0.10, 0, 1);
 
-  // 카드 사라지는 것도 마지막
-  const endFade = clamp((t - 0.94) / 0.06, 0, 1);
+      // 카드 사라지는 것도 마지막
+      const endFade = clamp((t - 0.94) / 0.06, 0, 1);
 
-  const startX = 0;
-  const startY = 0;
-  const startW = window.innerWidth;
-  const startH = window.innerHeight;
+      const startX = 0;
+      const startY = 0;
+      const startW = window.innerWidth;
+      const startH = window.innerHeight;
 
-  const target = getTargetCardRect();
-  const c = easeInOutQuart(cardPhase);
+      const target = getTargetCardRect();
+      const c = easeInOutQuart(cardPhase);
 
-  const currentX = lerp(startX, target.x, c);
-  const currentY = lerp(startY, target.y, c);
-  const currentW = lerp(startW, target.w, c);
-  const currentH = lerp(startH, target.h, c);
+      const currentX = lerp(startX, target.x, c);
+      const currentY = lerp(startY, target.y, c);
+      const currentW = lerp(startW, target.w, c);
+      const currentH = lerp(startH, target.h, c);
 
-  landingCard.style.left = `${currentX}px`;
-  landingCard.style.top = `${currentY}px`;
-  landingCard.style.width = `${currentW}px`;
-  landingCard.style.height = `${currentH}px`;
-  landingCard.style.borderRadius = `0px`;
+      landingCard.style.left = `${currentX}px`;
+      landingCard.style.top = `${currentY}px`;
+      landingCard.style.width = `${currentW}px`;
+      landingCard.style.height = `${currentH}px`;
+      landingCard.style.borderRadius = `0px`;
 
-  landingCardSheen.style.opacity = `${lerp(0.18, 0.0, c)}`;
-  landingCard.style.opacity = `${1 - endFade}`;
+      landingCardSheen.style.opacity = `${lerp(0.18, 0.0, c)}`;
+      landingCard.style.opacity = `${1 - endFade}`;
 
-  // 핵심: 메인은 90% 전까지 아예 안 보이게
-  if (t < 0.90) {
-    mainStage.style.opacity = "0";
-  } else {
-    mainStage.style.opacity = `${easeOutCubic(mainPhase)}`;
-  }
+      // 메인은 90% 전까지 안 보이게
+      if (t < 0.90) {
+        mainStage.style.opacity = "0";
+      } else {
+        mainStage.style.opacity = `${easeOutCubic(mainPhase)}`;
+      }
 
-  hint.style.opacity = t > 0.88 ? "0" : "1";
+      // 처음엔 검정, 스크롤 시작 후엔 흰색으로 유지, 마지막에만 숨김
+      hint.style.opacity = t > 0.88 ? "0" : "1";
 
-  const shouldUnlock = introFinished;
-  if (shouldUnlock !== revealUnlocked) {
-    revealUnlocked = shouldUnlock;
-    mainStage.style.pointerEvents = revealUnlocked ? "auto" : "none";
-  }
+      const shouldUnlock = introFinished;
+      if (shouldUnlock !== revealUnlocked) {
+        revealUnlocked = shouldUnlock;
+        mainStage.style.pointerEvents = revealUnlocked ? "auto" : "none";
+      }
 
-  if (t >= 0.999) {
-    introFinished = true;
-    revealUnlocked = true;
-    mainStage.style.pointerEvents = "auto";
-    mainStage.style.opacity = "1";
+      if (t >= 0.999) {
+        introFinished = true;
+        revealUnlocked = true;
+        mainStage.style.pointerEvents = "auto";
+        mainStage.style.opacity = "1";
 
-    if (landingStage) landingStage.remove();
-    hint.style.display = "none";
-  }
-}
+        if (landingStage) landingStage.remove();
+        hint.style.display = "none";
+      }
+    }
 
     function updateMouseFollow() {
       if (!svgRoot || !mouseLayer) return;
