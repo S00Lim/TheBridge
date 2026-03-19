@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>The Bridge</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
-  
+
   <style>
     @font-face {
       font-family: 'Dialogue';
@@ -20,26 +20,11 @@
     html, body {
       margin: 0;
       padding: 0;
-      font-family: 'Dialogue', serif;
-    }
-
-    svg text {
-      font-family: 'Dialogue', serif;
-    }
-  </style>
-  
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
       width: 100%;
       height: 100%;
       overflow: hidden;
       background: #000;
-    }
-
-    body {
-      font-family: sans-serif;
+      font-family: 'Dialogue', serif;
     }
 
     #app {
@@ -66,7 +51,7 @@
       display: block;
     }
 
-    /* MAIN: 랜딩 영향 안 받게 */
+    /* MAIN */
     #main-stage {
       z-index: 1;
       pointer-events: none;
@@ -75,7 +60,7 @@
       isolation: isolate;
     }
 
-    /* LANDING 전용 래퍼: 여기 안에서만 blend/opacity 처리 */
+    /* LANDING */
     #landing-stage {
       position: absolute;
       inset: 0;
@@ -140,7 +125,6 @@
       object-fit: fill;
     }
 
-    /* 처음엔 검정, 스크롤 시작하면 흰색으로 바뀌게 */
     #hint {
       position: fixed;
       left: 50%;
@@ -153,18 +137,17 @@
       letter-spacing: 0.08em;
       pointer-events: none;
       transition: color 0.35s ease, opacity 0.25s ease;
+      font-family: Arial, Helvetica, sans-serif;
     }
   </style>
 </head>
 <body>
   <div id="app">
-    <!-- MAIN -->
     <div id="main-stage" class="stage-layer">
       <div id="main-svg-wrap" class="svg-wrap stage-layer"></div>
       <div id="cover-wrap" class="stage-layer"></div>
     </div>
 
-    <!-- LANDING -->
     <div id="landing-stage">
       <div id="landing-card">
         <div id="landing-card-svg"></div>
@@ -290,12 +273,11 @@
         }
 
         svgRoot.setAttribute("preserveAspectRatio", "xMidYMid slice");
-        
-        svgRoot.querySelectorAll("text").forEach(t => {
-          t.style.fontFamily = "'Dialogue', serif";
-        });
 
         bindMainElements();
+
+        applyFontOverrides();
+
         detectCoverRect();
         detectMouseGeometry();
         buildCoverImages();
@@ -335,6 +317,50 @@
 
       if (cover1Placeholder) cover1Placeholder.style.display = "none";
       if (cover2Placeholder) cover2Placeholder.style.display = "none";
+    }
+
+    function applyDialogueToTextBlock(textEl) {
+      if (!textEl) return;
+
+      textEl.style.fontFamily = "'Dialogue', serif";
+      textEl.setAttribute("font-family", "Dialogue, serif");
+
+      textEl.querySelectorAll("tspan").forEach(t => {
+        t.style.fontFamily = "'Dialogue', serif";
+        t.setAttribute("font-family", "Dialogue, serif");
+      });
+    }
+
+    function applyFontOverrides() {
+      applyDialogueToTextBlock(text1);
+      applyDialogueToTextBlock(text2);
+      applyDialogueToTextBlock(bridgeText);
+
+      if (!unquotedText) return;
+
+      unquotedText.style.fontFamily = "'Dialogue', serif";
+      unquotedText.setAttribute("font-family", "Dialogue, serif");
+
+      const tspans = unquotedText.querySelectorAll("tspan");
+
+      tspans.forEach(t => {
+        const cls = t.getAttribute("class") || "";
+        const txt = (t.textContent || "").trim();
+
+        if (
+          cls.includes("cls-4") ||
+          cls.includes("cls-5") ||
+          txt === "3" ||
+          txt === "7" ||
+          txt === "37"
+        ) {
+          t.style.fontFamily = "'Syncro', serif";
+          t.setAttribute("font-family", "Syncro, serif");
+        } else {
+          t.style.fontFamily = "'Dialogue', serif";
+          t.setAttribute("font-family", "Dialogue, serif");
+        }
+      });
     }
 
     function detectCoverRect() {
@@ -484,13 +510,8 @@
     function updateIntroAnimation() {
       const t = easeInOutCubic(introProgress);
 
-      // 카드 이동은 대부분 구간에서 진행
       const cardPhase = clamp(t / 0.88, 0, 1);
-
-      // 메인은 아주 마지막에만 등장
       const mainPhase = clamp((t - 0.90) / 0.10, 0, 1);
-
-      // 카드 사라지는 것도 마지막
       const endFade = clamp((t - 0.94) / 0.06, 0, 1);
 
       const startX = 0;
@@ -515,14 +536,12 @@
       landingCardSheen.style.opacity = `${lerp(0.18, 0.0, c)}`;
       landingCard.style.opacity = `${1 - endFade}`;
 
-      // 메인은 90% 전까지 안 보이게
       if (t < 0.90) {
         mainStage.style.opacity = "0";
       } else {
         mainStage.style.opacity = `${easeOutCubic(mainPhase)}`;
       }
 
-      // 처음엔 검정, 스크롤 시작 후엔 흰색으로 유지, 마지막에만 숨김
       hint.style.opacity = t > 0.88 ? "0" : "1";
 
       const shouldUnlock = introFinished;
@@ -594,7 +613,6 @@
         show(bgw, false);
         show(text1, false);
 
-        /* 아까 보이던 버전처럼 */
         setTextColor(bridgeText, "#ffffff");
         setTextColor(unquotedText, "#ffffff");
 
